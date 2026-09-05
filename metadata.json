@@ -1,0 +1,6 @@
+{
+  "name": "Ascend - Life Progression System",
+  "description": "A native iOS personal progression and consistency platform tracking Sleep, Exercise, and Study/Work like a real-life RPG.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
