@@ -12,6 +12,9 @@ export interface UserProfile {
     dailyFocusMinutes: number; // e.g. 180 (3 hours)
     targetBedtime: string; // "23:00"
     targetWakeTime: string; // "07:00"
+    weeklyWorkouts?: number; // e.g. 4
+    weeklyStudyHours?: number; // e.g. 15
+    targetDailyProductivityScore?: number; // e.g. 80
   };
   targetBedtime?: string;
   targetWakeTime?: string;

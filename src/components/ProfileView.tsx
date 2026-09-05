@@ -23,7 +23,7 @@ interface ProfileViewProps {
   onExportJSON: () => void;
   onExportCSV: () => void;
   onResetData: () => void;
-  onOpenSwiftCode: () => void;
+  onOpenGoals: () => void;
   onOpenTests: () => void;
   onOpenOnboarding: () => void;
 }
@@ -34,7 +34,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onExportJSON,
   onExportCSV,
   onResetData,
-  onOpenSwiftCode,
+  onOpenGoals,
   onOpenTests,
   onOpenOnboarding,
 }) => {
@@ -96,7 +96,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               USER
             </span>
           </div>
-          <p className="text-xs text-[#A1A1AA] mt-1">Offline-first SwiftData storage • Native iOS Architecture</p>
+          <p className="text-xs text-[#A1A1AA] mt-1">Durable Local Storage • Ascend Web Edition</p>
         </div>
       </div>
 

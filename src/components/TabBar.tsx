@@ -78,8 +78,6 @@ export const TabBar: React.FC<TabBarProps> = ({ activeTab, onSelectTab }) => {
           );
         })}
       </div>
-      {/* iOS Home Indicator Bar */}
-      <div className="w-28 h-1 bg-white/20 rounded-full mx-auto mt-2" />
     </nav>
   );
 };

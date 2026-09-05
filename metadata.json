@@ -1,6 +1,6 @@
 {
-  "name": "Ascend - Life Progression System",
-  "description": "A native iOS personal progression and consistency platform tracking Sleep, Exercise, and Study/Work like a real-life RPG.",
+  "name": "Ascend: Personal Progression & Productivity",
+  "description": "A polished web personal progression and productivity application tracking Sleep, Exercise, and Study/Work with leveling, progression ladders, and deep analytics.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

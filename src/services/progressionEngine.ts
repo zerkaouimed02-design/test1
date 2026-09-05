@@ -1,19 +1,53 @@
 import { CategoryProgression, CategoryType, LevelLadderItem } from '../types';
 
-export const LEVEL_TITLES: { minLevel: number; maxLevel: number; title: string; badge: string }[] = [
-  { minLevel: 1, maxLevel: 4, title: 'Beginner', badge: '🌱' },
-  { minLevel: 5, maxLevel: 9, title: 'Consistent', badge: '⚡' },
-  { minLevel: 10, maxLevel: 14, title: 'Disciplined', badge: '🛡️' },
-  { minLevel: 15, maxLevel: 19, title: 'Dedicated', badge: '🔥' },
-  { minLevel: 20, maxLevel: 29, title: 'Advanced', badge: '⚔️' },
-  { minLevel: 30, maxLevel: 49, title: 'Elite', badge: '💎' },
-  { minLevel: 50, maxLevel: 74, title: 'Master', badge: '👑' },
-  { minLevel: 75, maxLevel: 99, title: 'Grandmaster', badge: '🌌' },
-  { minLevel: 100, maxLevel: 100, title: 'Ascendant Legend', badge: '⭐' },
-];
+export const CATEGORY_TIERS: Record<
+  CategoryType,
+  { minLevel: number; maxLevel: number; title: string; badge: string }[]
+> = {
+  sleep: [
+    { minLevel: 1, maxLevel: 4, title: 'Beginner', badge: '🌱' },
+    { minLevel: 5, maxLevel: 14, title: 'Consistent', badge: '⚡' },
+    { minLevel: 15, maxLevel: 29, title: 'Disciplined', badge: '🛡️' },
+    { minLevel: 30, maxLevel: 49, title: 'Advanced', badge: '⚔️' },
+    { minLevel: 50, maxLevel: 100, title: 'Elite', badge: '💎' },
+  ],
+  exercise: [
+    { minLevel: 1, maxLevel: 4, title: 'Beginner', badge: '🌱' },
+    { minLevel: 5, maxLevel: 9, title: 'Active', badge: '🏃' },
+    { minLevel: 10, maxLevel: 19, title: 'Consistent', badge: '⚡' },
+    { minLevel: 20, maxLevel: 29, title: 'Strong', badge: '🦾' },
+    { minLevel: 30, maxLevel: 49, title: 'Advanced', badge: '⚔️' },
+    { minLevel: 50, maxLevel: 100, title: 'Elite', badge: '💎' },
+  ],
+  study: [
+    { minLevel: 1, maxLevel: 4, title: 'Beginner', badge: '🌱' },
+    { minLevel: 5, maxLevel: 9, title: 'Focused', badge: '🎯' },
+    { minLevel: 10, maxLevel: 19, title: 'Consistent', badge: '⚡' },
+    { minLevel: 20, maxLevel: 29, title: 'Productive', badge: '🚀' },
+    { minLevel: 30, maxLevel: 49, title: 'Advanced', badge: '⚔️' },
+    { minLevel: 50, maxLevel: 100, title: 'Elite', badge: '💎' },
+  ],
+  overall: [
+    { minLevel: 1, maxLevel: 4, title: 'Beginner', badge: '🌱' },
+    { minLevel: 5, maxLevel: 9, title: 'Consistent', badge: '⚡' },
+    { minLevel: 10, maxLevel: 14, title: 'Disciplined', badge: '🛡️' },
+    { minLevel: 15, maxLevel: 19, title: 'Dedicated', badge: '🔥' },
+    { minLevel: 20, maxLevel: 29, title: 'Advanced', badge: '⚔️' },
+    { minLevel: 30, maxLevel: 49, title: 'Elite', badge: '💎' },
+    { minLevel: 50, maxLevel: 74, title: 'Master', badge: '👑' },
+    { minLevel: 75, maxLevel: 99, title: 'Grandmaster', badge: '🌌' },
+    { minLevel: 100, maxLevel: 100, title: 'Ascendant Legend', badge: '⭐' },
+  ],
+};
 
-export function getTitleForLevel(level: number): { title: string; badge: string } {
-  const match = LEVEL_TITLES.find((t) => level >= t.minLevel && level <= t.maxLevel);
+export const LEVEL_TITLES = CATEGORY_TIERS.overall;
+
+export function getTitleForLevel(
+  level: number,
+  category: CategoryType = 'overall'
+): { title: string; badge: string } {
+  const tiers = CATEGORY_TIERS[category] || CATEGORY_TIERS.overall;
+  const match = tiers.find((t) => level >= t.minLevel && level <= t.maxLevel);
   return match ? { title: match.title, badge: match.badge } : { title: 'Practitioner', badge: '✨' };
 }
 
@@ -77,7 +111,7 @@ export function calculateLevelFromTotalXP(totalXP: number): {
 export function generateProgressionLadder(category: CategoryType, currentLevel: number): LevelLadderItem[] {
   const items: LevelLadderItem[] = [];
   for (let l = 1; l <= 100; l++) {
-    const { title, badge } = getTitleForLevel(l);
+    const { title, badge } = getTitleForLevel(l, category);
     const requiredForThisStep = getXPForNextLevel(l);
     const totalRequired = CUMULATIVE_XP_TABLE[l - 1];
     const isMilestone = l === 5 || l === 10 || l === 20 || l === 30 || l === 50 || l === 75 || l === 100;
@@ -99,7 +133,7 @@ export function buildCategoryProgression(
   totalXP: number
 ): CategoryProgression {
   const { level, currentLevelXP, nextLevelXP } = calculateLevelFromTotalXP(totalXP);
-  const { title } = getTitleForLevel(level);
+  const { title } = getTitleForLevel(level, category);
 
   return {
     category,
@@ -111,9 +145,9 @@ export function buildCategoryProgression(
   };
 }
 
-export function evaluateLevel(totalXP: number) {
+export function evaluateLevel(totalXP: number, category: CategoryType = 'overall') {
   const lvl = calculateLevelFromTotalXP(totalXP);
-  const titleInfo = getTitleForLevel(lvl.level);
+  const titleInfo = getTitleForLevel(lvl.level, category);
   return {
     ...lvl,
     title: titleInfo.title,

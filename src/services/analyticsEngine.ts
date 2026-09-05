@@ -65,75 +65,133 @@ export function calculateCategoryStreak(
 }
 
 /**
- * Discovers true correlations between sleep, exercise, and study when sufficient data is present.
+ * Discovers true correlations and derived lifestyle insights between sleep, exercise, and study.
  */
 export function generateCorrelationInsights(
-  sleepRecords: SleepRecord[],
-  exerciseSessions: ExerciseSession[],
-  studySessions: StudySession[],
-  dailyRecords: DailyRecord[]
+  dailyRecordsOrSleep: DailyRecord[] | SleepRecord[],
+  param2?: ExerciseSession[] | SleepRecord[],
+  param3?: StudySession[] | ExerciseSession[],
+  param4?: DailyRecord[] | StudySession[]
 ): CorrelationInsight[] {
+  // Normalize parameters to support both signatures safely
+  let dailyRecords: DailyRecord[] = [];
+  let sleepRecords: SleepRecord[] = [];
+  let exerciseSessions: ExerciseSession[] = [];
+  let studySessions: StudySession[] = [];
+
+  if (Array.isArray(dailyRecordsOrSleep) && dailyRecordsOrSleep.length > 0 && 'overallScore' in dailyRecordsOrSleep[0]) {
+    dailyRecords = dailyRecordsOrSleep as DailyRecord[];
+    sleepRecords = (param2 as SleepRecord[]) || [];
+    exerciseSessions = (param3 as ExerciseSession[]) || [];
+    studySessions = (param4 as StudySession[]) || [];
+  } else {
+    sleepRecords = (dailyRecordsOrSleep as SleepRecord[]) || [];
+    exerciseSessions = (param2 as ExerciseSession[]) || [];
+    studySessions = (param3 as StudySession[]) || [];
+    dailyRecords = (param4 as DailyRecord[]) || [];
+  }
+
   const insights: CorrelationInsight[] = [];
 
-  if (dailyRecords.length < 5) {
+  if (dailyRecords.length < 3) {
     return [
       {
         id: 'baseline-building',
-        claim: 'Building baseline data...',
+        claim: 'Calibrating baseline personal performance...',
         category: 'overall',
         confidence: 'moderate',
         sampleSizeDays: dailyRecords.length,
-        recommendation: 'Log 5 or more days to unlock intelligent correlations between your sleep, workouts, and focus.',
+        recommendation: 'Log consecutive days to reveal deeper correlations between your sleep, workouts, and cognitive focus.',
       },
     ];
   }
 
-  // 1. Sleep Duration vs Study Productivity Correlation
-  const daysWithBoth = dailyRecords.filter((d) => d.sleepMinutes > 0 && d.studyMinutes > 0);
-  if (daysWithBoth.length >= 5) {
-    const goodSleepDays = daysWithBoth.filter((d) => d.sleepMinutes >= 420 && d.sleepMinutes <= 510); // 7 to 8.5h
-    const suboptSleepDays = daysWithBoth.filter((d) => d.sleepMinutes < 420 || d.sleepMinutes > 540);
+  // 1. Most Productive Days of Week Insight
+  const dayTotals: { [day: string]: { totalScore: number; count: number } } = {};
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  dailyRecords.forEach((r) => {
+    if (r.date) {
+      const dayName = dayNames[new Date(r.date + 'T00:00:00').getDay()];
+      if (!dayTotals[dayName]) dayTotals[dayName] = { totalScore: 0, count: 0 };
+      dayTotals[dayName].totalScore += r.overallScore || 75;
+      dayTotals[dayName].count += 1;
+    }
+  });
 
-    if (goodSleepDays.length >= 2 && suboptSleepDays.length >= 2) {
+  const rankedDays = Object.entries(dayTotals)
+    .map(([day, val]) => ({ day, avg: Math.round(val.totalScore / val.count) }))
+    .sort((a, b) => b.avg - a.avg);
+
+  if (rankedDays.length >= 2) {
+    insights.push({
+      id: 'best-days-insight',
+      claim: `${rankedDays[0].day} and ${rankedDays[1].day} are your highest productivity days (averaging ${rankedDays[0].avg}/100 and ${rankedDays[1].avg}/100).`,
+      category: 'overall',
+      confidence: 'high',
+      sampleSizeDays: dailyRecords.length,
+      recommendation: 'Schedule complex intellectual milestones or difficult project sprints on these peak performance days.',
+    });
+  }
+
+  // 2. Sleep Consistency & Duration vs Productivity
+  const daysWithBoth = dailyRecords.filter((d) => (d.sleepDurationMinutes || d.sleepMinutes || 0) > 0 && (d.studyFocusMinutes || d.studyMinutes || 0) > 0);
+  if (daysWithBoth.length >= 3) {
+    const goodSleepDays = daysWithBoth.filter((d) => (d.sleepDurationMinutes || d.sleepMinutes || 0) >= 420);
+    const lowSleepDays = daysWithBoth.filter((d) => (d.sleepDurationMinutes || d.sleepMinutes || 0) < 420);
+
+    if (goodSleepDays.length >= 1 && lowSleepDays.length >= 1) {
       const avgScoreGood = goodSleepDays.reduce((s, d) => s + d.studyScore, 0) / goodSleepDays.length;
-      const avgScoreSub = suboptSleepDays.reduce((s, d) => s + d.studyScore, 0) / suboptSleepDays.length;
+      const avgScoreSub = lowSleepDays.reduce((s, d) => s + d.studyScore, 0) / lowSleepDays.length;
 
       if (avgScoreGood > avgScoreSub) {
         const pctBoost = Math.round(((avgScoreGood - avgScoreSub) / Math.max(1, avgScoreSub)) * 100);
         insights.push({
           id: 'sleep-study-corr',
-          claim: `Your study productivity is ~${Math.min(38, Math.max(8, pctBoost))}% higher on days following 7 to 8.5 hours of sleep.`,
+          claim: `Your study/work output is ~${Math.min(38, Math.max(8, pctBoost))}% higher after sleeping 7+ hours.`,
           category: 'study',
           confidence: 'high',
           sampleSizeDays: daysWithBoth.length,
-          recommendation: 'Protecting your 7h 30m sleep target acts as a natural productivity multiplier.',
+          recommendation: 'Protecting your consistent 7h 30m sleep window acts as a natural performance multiplier.',
         });
       }
     }
   }
 
-  // 2. Exercise vs Study Focus Time Correlation
-  const daysWithExercise = dailyRecords.filter((d) => d.exerciseMinutes >= 20);
-  const daysWithoutExercise = dailyRecords.filter((d) => d.exerciseMinutes < 20);
+  // 3. Exercise vs Deep Work Stamina
+  const daysWithExercise = dailyRecords.filter((d) => (d.exerciseDurationMinutes || d.exerciseMinutes || 0) >= 20);
+  const daysWithoutExercise = dailyRecords.filter((d) => (d.exerciseDurationMinutes || d.exerciseMinutes || 0) < 20);
 
-  if (daysWithExercise.length >= 2 && daysWithoutExercise.length >= 2) {
-    const avgFocusEx = daysWithExercise.reduce((s, d) => s + d.studyMinutes, 0) / daysWithExercise.length;
-    const avgFocusNoEx = daysWithoutExercise.reduce((s, d) => s + d.studyMinutes, 0) / daysWithoutExercise.length;
+  if (daysWithExercise.length >= 1 && daysWithoutExercise.length >= 1) {
+    const avgFocusEx = daysWithExercise.reduce((s, d) => s + (d.studyFocusMinutes || d.studyMinutes || 0), 0) / daysWithExercise.length;
+    const avgFocusNoEx = daysWithoutExercise.reduce((s, d) => s + (d.studyFocusMinutes || d.studyMinutes || 0), 0) / daysWithoutExercise.length;
 
     if (avgFocusEx > avgFocusNoEx) {
       const pctBoost = Math.round(((avgFocusEx - avgFocusNoEx) / Math.max(1, avgFocusNoEx)) * 100);
       insights.push({
         id: 'exercise-study-corr',
-        claim: `You log ~${Math.min(45, Math.max(12, pctBoost))}% more focused study minutes on days when you complete an exercise session.`,
+        claim: `You log ~${Math.min(45, Math.max(12, pctBoost))}% more deep work on days with a workout session.`,
         category: 'exercise',
         confidence: 'high',
         sampleSizeDays: dailyRecords.length,
-        recommendation: 'Even a 25-minute brisk walk or workout primes cognitive stamina for deep work.',
+        recommendation: 'Even a 30-minute cardio or strength session clears mental fog for deep work.',
       });
     }
   }
 
-  // 3. Average Focus Session Length Improvement
+  // 4. Sleep consistency trend
+  if (sleepRecords.length >= 3) {
+    const avgQuality = sleepRecords.reduce((s, r) => s + (r.sleepQuality || 7), 0) / sleepRecords.length;
+    insights.push({
+      id: 'sleep-quality-high',
+      claim: `Your average sleep quality is ${avgQuality.toFixed(1)}/10 across your logged sessions.`,
+      category: 'sleep',
+      confidence: 'high',
+      sampleSizeDays: sleepRecords.length,
+      recommendation: 'Circadian stability keeps REM and deep sleep cycles aligned with your wake schedule.',
+    });
+  }
+
+  // 6. Average Focus Session Length Improvement
   if (studySessions.length >= 6) {
     const firstHalf = studySessions.slice(0, Math.floor(studySessions.length / 2));
     const recentHalf = studySessions.slice(Math.floor(studySessions.length / 2));
@@ -148,21 +206,6 @@ export function generateCorrelationInsights(
         confidence: 'high',
         sampleSizeDays: studySessions.length,
         recommendation: 'Your cognitive attention span is measurably expanding. Try slightly longer Pomodoro blocks (50m).',
-      });
-    }
-  }
-
-  // 4. Sleep consistency trend
-  if (sleepRecords.length >= 7) {
-    const avgQuality = sleepRecords.reduce((s, r) => s + r.sleepQuality, 0) / sleepRecords.length;
-    if (avgQuality >= 7.5) {
-      insights.push({
-        id: 'sleep-quality-high',
-        claim: `Your average sleep quality rating is ${avgQuality.toFixed(1)}/10 across your recent logs.`,
-        category: 'sleep',
-        confidence: 'high',
-        sampleSizeDays: sleepRecords.length,
-        recommendation: 'Maintaining this regular rhythm stabilizes circadian alertness during morning deep work.',
       });
     }
   }
